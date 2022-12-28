@@ -1,0 +1,16 @@
+cli_testing:
+    complements: true
+    ci:
+        active: true
+        max_exec_minutes: 20
+    display_mode:
+        execution_time: true
+
+    file_generation:
+        hosts: true
+        plain: true
+
+dns:
+    server:
+        - 8.8.8.8
+        - 8.8.4.4

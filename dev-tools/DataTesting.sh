@@ -10,6 +10,8 @@
 # Find funceble at: https://github.com/funilrys/PyFunceble
 # ****************************************************************
 
+set -e
+
 # **********************
 # Setting date variables
 # **********************
@@ -17,13 +19,22 @@
 yeartag=$(date +%Y)
 monthtag=$(date +%m)
 
+
+if [[ -z ${TRAVIS_BUILD_DIR+x} ]]
+then
+    baseDir=.
+else
+    baseDir=${TRAVIS_BUILD_DIR}
+fi
+
+export PYFUNCEBLE_OUTPUT_LOCATION="${baseDir}/dev-tools"
+export PYFUNCEBLE_CONFIG_LOCATION="${PYFUNCEBLE_OUTPUT_LOCATION}"
+export PYFUNCEBLE_AUTO_CONFIGURATION="true"
+
 # ******************
 # Set our Input File
 # ******************
-input=${TRAVIS_BUILD_DIR}/PULL_REQUESTS/domains.txt
-pyfuncebleConfigurationFileLocation=${TRAVIS_BUILD_DIR}/dev-tools/.PyFunceble.yaml
-pyfuncebleProductionConfigurationFileLocation=${TRAVIS_BUILD_DIR}/dev-tools/.PyFunceble_production.yaml
-
+input=${baseDir}/domains
 # **********************
 # Run PyFunceble Testing
 # **********************************************************
@@ -31,25 +42,19 @@ pyfuncebleProductionConfigurationFileLocation=${TRAVIS_BUILD_DIR}/dev-tools/.PyF
 # **********************************************************
 
 RunFunceble () {
-
+    
     yeartag=$(date +%Y)
     monthtag=$(date +%m)
-    ulimit -u
-    cd ${TRAVIS_BUILD_DIR}/dev-tools
-
+    
     hash PyFunceble
-
-    if [[ -f "${pyfuncebleConfigurationFileLocation}" ]]
-    then
-        rm "${pyfuncebleConfigurationFileLocation}"
-        rm "${pyfuncebleProductionConfigurationFileLocation}"
-    fi
-
-    PyFunceble --travis -db -ex --dns 1.1.1.1 1.0.0.1 --cmd-before-end "bash ${TRAVIS_BUILD_DIR}/dev-tools/FinalCommit.sh" --plain --autosave-minutes 20 --commit-autosave-message "V1.${yeartag}.${monthtag}.${TRAVIS_BUILD_NUMBER} [PyFunceble]" --commit-results-message "V1.${yeartag}.${monthtag}.${TRAVIS_BUILD_NUMBER}" -f ${input}
-
+    
+    PyFunceble -v
+    python -VV
+    PyFunceble --ci-end-command "bash ${baseDir}/dev-tools/FinalCommit.sh" --ci-commit-message "V1.${yeartag}.${monthtag}.${TRAVIS_BUILD_NUMBER} [PyFunceble]" --ci-end-commit-message "V1.${yeartag}.${monthtag}.${TRAVIS_BUILD_NUMBER}" -f ${input} --logging-level critical 
+    
 }
 
 RunFunceble
 
-
+##
 exit ${?}

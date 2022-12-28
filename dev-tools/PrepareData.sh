@@ -5,48 +5,92 @@
 # Repo Url: https://github.com/mitchellkrogza/Badd-Boyz-Hosts
 # MIT License
 
+
+# We stop after the first error.
+set -e
+
 # **********************************
 # Setup input bots and referer lists
 # **********************************
 
-input1=${TRAVIS_BUILD_DIR}/PULL_REQUESTS/domains.txt
+if [[ -z ${TRAVIS_BUILD_DIR+x} ]]
+then
+    baseDir=.
+else
+    baseDir=${TRAVIS_BUILD_DIR}
+fi
 
-# *********************************************
-# Get Travis CI Prepared for Committing to Repo
-# *********************************************
+whitelistFile=${baseDir}/whitelists/me
+antiWhitelistFile=${baseDir}/whitelists/anti
+input1=${baseDir}/PULL_REQUESTS/add-domain
+input2=${baseDir}/domains
+input3=${baseDir}/PULL_REQUESTS/remove-domain
+pythonversion="3.7.4"
+environmentname="pyconda"
 
-PrepareTravis () {
-    git remote rm origin
-    git remote add origin https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
-    git config --global user.email "${GIT_EMAIL}"
-    git config --global user.name "${GIT_NAME}"
-    git config --global push.default simple
-    git checkout "${GIT_BRANCH}"
-    ulimit -u
+# ------------------------
+# Set Terminal Font Colors
+# ------------------------
+
+bold=$(tput bold)
+red=$(tput setaf 1)
+green=$(tput setaf 2)
+yellow=$(tput setaf 3)
+blue=$(tput setaf 4)
+magenta=$(tput setaf 5)
+cyan=$(tput setaf 6)
+white=$(tput setaf 7)
+defaultcolor=$(tput setaf default)
+
+# ***********
+# Add Domains
+# ***********
+
+add-domain () {
+if [ -s ${input1} ]
+then
+    echo "Domain Addition Requested"
+    cat ${input1} >> ${input2}
+    sort -u ${input2} -o ${input2}
+    dos2unix ${input2}
+    truncate -s 0 ${input1}
+    else
+    :
+fi
 }
-PrepareTravis
+add-domain
 
-# **************************************************************************
-# Sort lists alphabetically and remove duplicates before cleaning Dead Hosts
-# **************************************************************************
- PrepareLists () {
-    sort -u ${input1} -o ${input1}
-    dos2unix ${input1}
- }
-PrepareLists
+# **************
+# Remove Domains
+# **************
+
+remove-domain () {
+if [ -s ${input3} ]
+then
+    echo "Domain Removal Requested"
+    cat ${input3} >> ${whitelistFile}
+    sort -u ${whitelistFile} -o ${whitelistFile}
+    dos2unix ${whitelistFile}
+
+    truncate -s 0 ${input3}
+    else
+    :
+fi
+}
+remove-domain
+
+
 
 # ***********************************
 # Deletion of all whitelisted domains
 # ***********************************
 
 WhiteListing () {
-    if [[ "$(git log -1 | tail -1 | xargs)" =~ "ci skip" ]]
-        then
-            hash uhb_whitelist
-            uhb_whitelist -f "${input1}" -o "${input1}"
-    fi
+    hash uhb_whitelist
+    uhb_whitelist -f "${input2}" -o "${input2}" -w "${whitelistFile}" -a "${antiWhitelistFile}"
 }
 WhiteListing
+
 
 exit ${?}
 
